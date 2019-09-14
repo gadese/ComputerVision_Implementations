@@ -1,6 +1,4 @@
 from __future__ import print_function
-import plaidml.keras
-plaidml.keras.install_backend()
 
 import keras
 from keras.layers import Dense, Conv2D, BatchNormalization, Activation
@@ -42,11 +40,11 @@ subtract_pixel_mean = True
 # ResNet164 |27(18)| -----     | 94.07     | -----     | 94.54     | ---(---)
 # ResNet1001| (111)| -----     | 92.39     | -----     | 95.08+-.14| ---(---)
 # ---------------------------------------------------------------------------
-n = 3
+n = 18
 
 # Model version
 # Orig paper: version = 1 (ResNet v1), Improved ResNet: version = 2 (ResNet v2)
-version = 2
+version = 1
 
 # Computed depth from supplied model parameter n
 if version == 1:
@@ -334,8 +332,8 @@ model.compile(loss='categorical_crossentropy',
 model.summary()
 print(model_type)
 
-save_dir = os.path.join(os.getcwd(), 'saved_models')
-model_name = 'resnet_v2_test'
+model_name = model_type
+save_dir = os.path.join(os.getcwd(), 'SavedModels/'+model_name)
 if not os.path.isdir(save_dir):
     os.makedirs(save_dir)
 model_path = os.path.join(save_dir, model_name)
@@ -344,10 +342,10 @@ print('Saved trained model at %s ' % model_path + '.h5')
 plot_model(model, to_file=model_path+ '.png', show_shapes=True, show_layer_names=False)
 
 # Prepare model model saving directory.
-save_dir = os.path.join(os.getcwd(), 'saved_models')
-model_name = 'cifar10_%s_model.{epoch:03d}.h5' % model_type
-if not os.path.isdir(save_dir):
-    os.makedirs(save_dir)
+#save_dir = os.path.join(os.getcwd(), 'saved_models')
+#model_name = 'cifar10_%s_model.{epoch:03d}.h5' % model_type
+#if not os.path.isdir(save_dir):
+#    os.makedirs(save_dir)
 filepath = os.path.join(save_dir, model_name)
 
 # Prepare callbacks for model saving and for learning rate adjustment.

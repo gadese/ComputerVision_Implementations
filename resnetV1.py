@@ -1,9 +1,8 @@
 from __future__ import print_function
-import plaidml.keras
-plaidml.keras.install_backend()
+# import plaidml.keras
+# plaidml.keras.install_backend()
 
 import keras
-from keras.datasets import mnist
 from keras.datasets import cifar10
 from keras.models import Model
 from keras.layers import Conv2D, BatchNormalization, Activation, Input, Add, AveragePooling2D, Flatten, Dense
@@ -17,17 +16,31 @@ import os
 
 from keras.utils import plot_model
 
+#from keras import backend as K
+#K.tensorflow_backend._get_available_gpus()
+
+#import tensorflow as tf
+#a = tf.constant([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], shape=[2, 3], name='a')
+#b = tf.constant([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], shape=[3, 2], name='b')
+#c = tf.matmul(a, b)
+# Creates a session with log_device_placement set to True.
+#sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
+# Runs the op.
+#print(sess.run(c))
+
+#with tf.device('/device:GPU:0'):
+
 # Training parameters
 batch_size = 32  # orig paper trained all networks with batch_size=128
-epochs = 10
-data_augmentation = False
+epochs = 1
+data_augmentation = True
 num_classes = 10
 subtract_pixel_mean = True
-nbr_blocks = 3
+nbr_blocks = 18
 n = [3, 9, 18, 27]
 nbr_stacks = 3
 
-depth = nbr_stacks * 6 + 2
+depth = nbr_blocks * 6 + 2
 
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
 # Input image dimensions.
@@ -64,12 +77,14 @@ def conv_layer(inputs, nbr_filt= 16, kernel_size=3, strides=(1, 1), activ='relu'
 def resnetV1(shape, depth, nbr_classes):
     num_filters = 16
     nbr_blocks = int((depth - 2) / 6)
+    #nbr_blocks = [3, 4, 6]
 
     inputs = Input(shape)
     data = conv_layer(inputs)
 
     for stack in range(nbr_stacks):
         for block in range(nbr_blocks):
+        #for block in range(nbr_blocks[stack]):
             if stack > 0 and block == 0:
                 stride = (2, 2)
             else:
@@ -94,11 +109,11 @@ def resnetV1(shape, depth, nbr_classes):
 
 
 model = resnetV1(shape=input_shape, depth=depth, nbr_classes=10)
-model.compile(loss=keras.losses.categorical_crossentropy, optimizer=Adam(lr=0.05, decay=0.01/epochs), metrics=['accuracy'])
+model.compile(loss=keras.losses.categorical_crossentropy, optimizer=Adam(lr=1e-3, decay=0.01/epochs), metrics=['accuracy'])
 model.summary()
 
-save_dir = os.path.join(os.getcwd(), 'saved_models')
-model_name = 'resnet_v1_a'
+model_name = 'Resnet'+str(depth)+'v1_'+str(epochs)+'epoch'
+save_dir = os.path.join(os.getcwd(), 'SavedModels/'+model_name)
 if not os.path.isdir(save_dir):
     os.makedirs(save_dir)
 model_path = os.path.join(save_dir, model_name)
