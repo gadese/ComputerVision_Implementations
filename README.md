@@ -1,2 +1,2 @@
-# ComputerVision_Implementations
+# Computer Vision Implementations
 Personal implementations of various algorithms
