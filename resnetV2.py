@@ -1,6 +1,6 @@
 from __future__ import print_function
-import plaidml.keras
-plaidml.keras.install_backend()
+#import plaidml.keras
+#plaidml.keras.install_backend()
 
 import keras
 from keras.datasets import mnist
@@ -19,15 +19,14 @@ from keras.utils import plot_model
 
 # Training parameters
 batch_size = 32  # orig paper trained all networks with batch_size=128
-epochs = 10
-data_augmentation = False
+epochs = 2
+data_augmentation = True
 num_classes = 10
 subtract_pixel_mean = True
-nbr_blocks = 3
-nbr_stacks = 2
-n = [2, 6, 12, 18]
+nbr_stacks = 3
+nbr_blocks = 6
 
-depth = nbr_stacks * 9 + 2
+
 
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
 # Input image dimensions.
@@ -97,7 +96,7 @@ def conv_layer(inputs, nbr_filt= 16, kernel_size=3, strides=(1, 1), activ='relu'
 
 def resnetV2(shape, depth, nbr_classes):
     num_filters_in = 16
-    #nbr_blocks = int((depth - 2) / 9)
+    nbr_blocks = int((depth - 2) / 9)
 
     inputs = Input(shape)
     data = conv_layer(inputs, nbr_filt=num_filters_in)
@@ -154,105 +153,141 @@ def resnetV2(shape, depth, nbr_classes):
     my_model = Model(inputs=inputs, outputs=output)
     return my_model
 
+n = [2, 6, 12]
+for nbr_blocks in n:
+    depth = nbr_blocks * 9 + 2
+
+    model = resnetV2(shape=input_shape, depth=depth, nbr_classes=10)
+    model.compile(loss=keras.losses.categorical_crossentropy, optimizer=Adam(lr=lr_schedule(0)), metrics=['accuracy'])
+    #model.compile(loss=keras.losses.categorical_crossentropy, optimizer=Adam(lr=1e-3, decay=1e-3/epochs), metrics=['accuracy'])
+    model.summary()
+
+    model_name = 'Resnet'+str(depth)+'v2_'+str(epochs)+'epoch_LRschedule'
+    save_dir = os.path.join(os.getcwd(), 'SavedModels/'+model_name)
+    if not os.path.isdir(save_dir):
+        os.makedirs(save_dir)
+    model_path = os.path.join(save_dir, model_name)
+    model.save(model_path)
+    print('Saved trained model at %s ' % model_path + '.h5')
+    plot_model(model, to_file=model_path+ '.png', show_shapes=True, show_layer_names=False)
 
 
+    checkpoint = ModelCheckpoint(filepath=model_path,
+                                 monitor='val_acc',
+                                 verbose=1,
+                                 save_best_only=True)
 
+    lr_scheduler = LearningRateScheduler(lr_schedule)
 
+    lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1),
+                                   cooldown=0,
+                                   patience=5,
+                                   min_lr=0.5e-6)
 
+    callbacks = [checkpoint, lr_reducer, lr_scheduler]
+    # callbacks = [checkpoint]
+    # Run training, with or without data augmentation.
+    if not data_augmentation:
+        print('Not using data augmentation.')
+        history=model.fit(x_train, y_train,
+                  batch_size=batch_size,
+                  epochs=epochs,
+                  validation_data=(x_test, y_test),
+                  shuffle=True,
+                  callbacks=callbacks)
+    else:
+        print('Using real-time data augmentation.')
+        # This will do preprocessing and realtime data augmentation:
+        datagen = ImageDataGenerator(
+            # set input mean to 0 over the dataset
+            featurewise_center=False,
+            # set each sample mean to 0
+            samplewise_center=False,
+            # divide inputs by std of dataset
+            featurewise_std_normalization=False,
+            # divide each input by its std
+            samplewise_std_normalization=False,
+            # apply ZCA whitening
+            zca_whitening=False,
+            # epsilon for ZCA whitening
+            zca_epsilon=1e-06,
+            # randomly rotate images in the range (deg 0 to 180)
+            rotation_range=0,
+            # randomly shift images horizontally
+            width_shift_range=0.1,
+            # randomly shift images vertically
+            height_shift_range=0.1,
+            # set range for random shear
+            shear_range=0.,
+            # set range for random zoom
+            zoom_range=0.,
+            # set range for random channel shifts
+            channel_shift_range=0.,
+            # set mode for filling points outside the input boundaries
+            fill_mode='nearest',
+            # value used for fill_mode = "constant"
+            cval=0.,
+            # randomly flip images
+            horizontal_flip=True,
+            # randomly flip images
+            vertical_flip=False,
+            # set rescaling factor (applied before any other transformation)
+            rescale=None,
+            # set function that will be applied on each input
+            preprocessing_function=None,
+            # image data format, either "channels_first" or "channels_last"
+            data_format=None,
+            # fraction of images reserved for validation (strictly between 0 and 1)
+            validation_split=0.0)
 
-model = resnetV2(shape=input_shape, depth=depth, nbr_classes=10)
-model.compile(loss=keras.losses.categorical_crossentropy, optimizer=Adam(lr=lr_schedule(0)), metrics=['accuracy'])
-model.summary()
+        # Compute quantities required for featurewise normalization
+        # (std, mean, and principal components if ZCA whitening is applied).
+        datagen.fit(x_train)
 
-save_dir = os.path.join(os.getcwd(), 'resnetV2_saved_models')
-model_name = 'resnet_v2_a'
-if not os.path.isdir(save_dir):
-    os.makedirs(save_dir)
-model_path = os.path.join(save_dir, model_name)
-model.save(model_path)
-print('Saved trained model at %s ' % model_path + '.h5')
-plot_model(model, to_file=model_path+ '.png', show_shapes=True, show_layer_names=False)
+        # Fit the model on the batches generated by datagen.flow().
+        history=model.fit_generator(datagen.flow(x_train, y_train, batch_size=batch_size),
+                            validation_data=(x_test, y_test),
+                            epochs=epochs, verbose=1, workers=4,
+                            callbacks=callbacks)
 
+    # Score trained model.
+    scores = model.evaluate(x_test, y_test, verbose=1)
+    print('Test loss:', scores[0])
+    print('Test accuracy:', scores[1])
+    import matplotlib.pyplot as plt
 
-checkpoint = ModelCheckpoint(filepath=model_path,
-                             monitor='val_acc',
-                             verbose=1,
-                             save_best_only=True)
+    fig, ax = plt.subplots(2, 1)
+    ax[0].plot(history.history['acc'])
+    ax[1].plot(history.history['val_acc'])
 
-lr_scheduler = LearningRateScheduler(lr_schedule)
+    ax[0].set_xlim(0, epochs - 1)
+    ax[0].set_xlabel('epoch')
+    ax[0].set_ylabel('accuracy')
+    ax[0].set_title('Model accuracy - Train')
 
-lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1),
-                               cooldown=0,
-                               patience=5,
-                               min_lr=0.5e-6)
+    ax[1].set_title('Model accuracy - Test')
+    ax[1].set_xlim(0, epochs - 1)
+    ax[1].set_ylabel('accuracy')
+    ax[1].set_xlabel('epoch')
 
-callbacks = [checkpoint, lr_reducer, lr_scheduler]
-#callbacks = [checkpoint]
-# Run training, with or without data augmentation.
-if not data_augmentation:
-    print('Not using data augmentation.')
-    model.fit(x_train, y_train,
-              batch_size=batch_size,
-              epochs=epochs,
-              validation_data=(x_test, y_test),
-              shuffle=True,
-              callbacks=callbacks)
-else:
-    print('Using real-time data augmentation.')
-    # This will do preprocessing and realtime data augmentation:
-    datagen = ImageDataGenerator(
-        # set input mean to 0 over the dataset
-        featurewise_center=False,
-        # set each sample mean to 0
-        samplewise_center=False,
-        # divide inputs by std of dataset
-        featurewise_std_normalization=False,
-        # divide each input by its std
-        samplewise_std_normalization=False,
-        # apply ZCA whitening
-        zca_whitening=False,
-        # epsilon for ZCA whitening
-        zca_epsilon=1e-06,
-        # randomly rotate images in the range (deg 0 to 180)
-        rotation_range=0,
-        # randomly shift images horizontally
-        width_shift_range=0.1,
-        # randomly shift images vertically
-        height_shift_range=0.1,
-        # set range for random shear
-        shear_range=0.,
-        # set range for random zoom
-        zoom_range=0.,
-        # set range for random channel shifts
-        channel_shift_range=0.,
-        # set mode for filling points outside the input boundaries
-        fill_mode='nearest',
-        # value used for fill_mode = "constant"
-        cval=0.,
-        # randomly flip images
-        horizontal_flip=True,
-        # randomly flip images
-        vertical_flip=False,
-        # set rescaling factor (applied before any other transformation)
-        rescale=None,
-        # set function that will be applied on each input
-        preprocessing_function=None,
-        # image data format, either "channels_first" or "channels_last"
-        data_format=None,
-        # fraction of images reserved for validation (strictly between 0 and 1)
-        validation_split=0.0)
+    fig.tight_layout()
+    plt.savefig(model_path+'_accuracy', format='png')
+    plt.close()
 
-    # Compute quantities required for featurewise normalization
-    # (std, mean, and principal components if ZCA whitening is applied).
-    datagen.fit(x_train)
+    fig, ax = plt.subplots(2, 1)
+    ax[0].plot(history.history['loss'])
+    ax[1].plot(history.history['val_loss'])
 
-    # Fit the model on the batches generated by datagen.flow().
-    model.fit_generator(datagen.flow(x_train, y_train, batch_size=batch_size),
-                        validation_data=(x_test, y_test),
-                        epochs=epochs, verbose=1, workers=4,
-                        callbacks=callbacks)
+    ax[0].set_xlim(0, epochs - 1)
+    ax[0].set_xlabel('epoch')
+    ax[0].set_ylabel('loss')
+    ax[0].set_title('Model loss - Train')
 
-# Score trained model.
-scores = model.evaluate(x_test, y_test, verbose=1)
-print('Test loss:', scores[0])
-print('Test accuracy:', scores[1])
+    ax[1].set_title('Model loss - Test')
+    ax[1].set_xlim(0, epochs - 1)
+    ax[1].set_ylabel('loss')
+    ax[1].set_xlabel('epoch')
+
+    fig.tight_layout()
+    plt.savefig(model_path + 'loss', format='png')
+    plt.close()
