@@ -3,3 +3,9 @@ Datasets/
 saved_models/
 SavedModels/
 .idea/
+
+SavedModels/ResNet110v1/
+SavedModels/ResNet110v2/
+SavedModels/ResNet20v2/
+SavedModels/ResNet56v1/
+SavedModels/ResNet56v2/
