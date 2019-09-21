@@ -1,0 +1,11 @@
+./Resnet56v1_200epoch/Resnet56v1_200epoch.h5,Loss:,0.49739137606620787,Accuracy,0.9104
+./Resnet110v1_200epoch/Resnet110v1_200epoch.h5,Loss:,0.47362914216518404,Accuracy,0.9151
+./Resnet20v2_200epoch/Resnet20v2_200epoch2.h5,Loss:,0.9811422691345215,Accuracy,0.8335
+./Resnet56v2_200epoch/Resnet56v2_200epoch.h5,Loss:,0.8192489830970764,Accuracy,0.8627
+./Resnet110v2_200epoch/Resnet110v2_200epoch.h5,Loss:,0.8790497650146485,Accuracy,0.8583
+./Resnet20v2_200epoch_DataAugmented/Resnet20v2_200epoch_DataAugmented.h5,Loss:,0.5038106139183044,Accuracy,0.9001
+./Resnet110v2_200epoch_DataAugmented/Resnet110v2_200epoch_DataAugmented.h5,Loss:,0.4460807069301605,Accuracy,0.9172
+./Resnet56v2_200epoch_DataAugmented/Resnet56v2_200epoch_DataAugmented.h5,Loss:,0.4747027060985565,Accuracy,0.9055
+./Resnet20v2_200epoch_LRschedule/Resnet20v2_200epoch_LRschedule2.h5,Loss:,0.43278900237083434,Accuracy,0.9121
+./Resnet56v2_200epoch_LRschedule/Resnet56v2_200epoch_LRschedule.h5,Loss:,0.39479746723175047,Accuracy,0.9292
+./Resnet110v2_200epoch_LRschedule/Resnet110v2_200epoch_LRschedule.h5,Loss:,0.3944169024467468,Accuracy,0.9296
