@@ -28,6 +28,8 @@ Compared to the ResNetV1
 | ResNet56 V1  |  9  | 91,04 | 0,4974 |
 | ResNet110 V1 |  18 | 91,51 | 0,4736 |
 
+Interestingly, the results with ResNetv2 are only marginally better than with ResNetv1. 
+
 ## Methodology
 
 ### Baseline
@@ -87,7 +89,7 @@ Again, the custom learning rate schedule gave a noticeable improvement, allowing
 
 ### Next work
 
-It would be interesting to see how the model fares on another dataset, such as MNIST. It would also be interesting to see if the original paper's proposed block sizes actually offer a better performance than what was achieved in this project.
+It would be interesting to see how the model fares on another dataset, such as MNIST. It would also be interesting to see if the original paper's suggested block sizes actually offer a better performance than what was achieved in this project.
 
 [20v2_acc]: https://github.com/gadese/ComputerVision_Implementations/tree/develop/ResNetv2/Resnet20v2_200epoch/Resnet20v2_200epoch_accuracy.png "ResNet20V2_accuracy"
 [20v2_loss]: https://github.com/gadese/ComputerVision_Implementations/tree/develop/ResNetv2/Resnet20v2_200epoch/Resnet20v2_200epochloss.png "ResNet20V2_loss"
